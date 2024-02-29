@@ -121,21 +121,31 @@ class Prediction_Report():
     def __init__(self):
         pass
 
+    '''
+    def get_max_prediction_proba(self, predictions):
+        vals = []
+        for pred in predictions:
+            max_index = np.where(pred == np.amax(pred))[0][0]
+            vals.append(max_index)
+        return vals
+    '''
+
     def report_precision_recall(self,y_test, y_pred):
         precision, recall, fscore, support = precision_recall_fscore_support(y_test, y_pred, average='macro')
-        print('precision:', precision)
-        print('recall:', recall)
+        return format(precision, ".2f"), format(recall, ".2f"), format(fscore, ".2f")
+
         
     def plot_confusion_matrix(self, y_test, y_pred, attackTypeMapping):
         conf_matrix = confusion_matrix(y_test, y_pred)
         class_names = list(attackTypeMapping.get_mapping().keys())
-        print(conf_matrix)
+        # print(conf_matrix)
 
-        plt.figure(figsize=(5, 5))
-        fig = sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", cbar=False, 
+        sns.set_theme(font_scale=0.5, font="sans-serif")
+        plt.figure(figsize=(4, 4))
+        fig = sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Reds", cbar=False, 
                           xticklabels=class_names, yticklabels=class_names).get_figure() #,xticklabels=label_encoder.classes_, yticklabels=label_encoder.classes_
-        plt.xlabel("Predicted Label")
-        plt.ylabel("True Label")
+        plt.xlabel("Predicted Cyber Attack Type")
+        plt.ylabel("True Cyber Attack Type")
         plt.title("Confusion Matrix")
         plt.show()
 
