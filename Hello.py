@@ -1,51 +1,94 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+import pickle
 import streamlit as st
-from streamlit.logger import get_logger
+import io
+import pandas as pd
+from helper import cutCatTranformer, columnDropperTransformer, AttackTypeMapping, Prediction_Report
+from sklearn.model_selection import train_test_split
+# loading the trained model
+trained_model = 'trained_model/model_xgboost15class.pkl'
+model = pickle.load(open(trained_model, 'rb'))
 
-LOGGER = get_logger(__name__)
+#@st.cache_data(experimental_allow_widgets=True) 
 
-
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
-
-    st.write("# Welcome to Streamlit! 👋")
-
-    st.sidebar.success("Select a demo above.")
-
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
+def main():
+    
+    ## write a front end view for the app
+    html_temp = """
+    <div style="background-color:tomato;padding:10px">
+    <h2 style="color:white;text-align:center;">Cyber Attack Detector</h2>
+    </div>
     """
-    )
+    ## display the front end aspect
+    st.markdown(html_temp,unsafe_allow_html=True)
+    
+    st.write('❤️ This is a simple app to show the results of the predictive maintenance model.')
+    
+    # upload a file
+    file = st.file_uploader("Upload file", type=["csv"])
+    if file is not None:
+        try:
+            ## read the uploaded csv file          
+            df = pd.read_csv(file, low_memory=False)
+            X,y = df.drop(columns=['Attack_label', 'Attack_type']), df['Attack_type']
+            st.subheader('Data')
+            st.write(df.head())
+           
+            # Add a new column called 'select' with default value False as the first column
+            # X.insert(0, 'select', False)            
+            # edited_df = st.data_editor(
+            #                 X,
+            #                 column_config={
+            #                     "select": st.column_config.CheckboxColumn(
+            #                         "select",
+            #                         help="Select your **network traffic** for attack prediction",
+            #                         default=False,
+            #                     )
+            #                 },
+            #                 hide_index=True
+            #             )           
+            
+            # set a slider for sample data for model prediction
+            values = st.slider(
+                'Select the percentage of data you want for model prediction',
+                0.0, 100.0, (20.0))
+            st.write(values,'%')
+
+        except Exception as e:
+            st.write(str(e))
+            
+    if st.button('Predict'):
+        try:
+            X_train, X, y_train, y = train_test_split(X, y, test_size=values/100.0)
+
+            # set the selected rows for prediction
+            # selected_indices = edited_df.loc[edited_df["select"] == True].index.values
+            # X = X.loc[selected_indices]
+            # y = y.loc[selected_indices]
 
 
-if __name__ == "__main__":
-    run()
+            # call labelEncoder_y.encode in the helper.py to encode the 15 multiclasses
+            attackTypeMapping = AttackTypeMapping()
+            y = attackTypeMapping.map_type2value(y)
+
+            predictions = model.predict(X)
+
+            # print the prediction (first 5 lines)
+            prediction_output = pd.DataFrame(attackTypeMapping.map_value2type(predictions), columns = ['attack_type_prediction'])
+            prediction_output = pd.concat([prediction_output, X.reset_index(drop=True)], axis=1)
+            st.write(prediction_output.head())
+
+            # report 
+            prediction_report = Prediction_Report()
+            prediction_report.report_precision_recall(y, predictions)
+            fig = prediction_report.plot_confusion_matrix(y, predictions, attackTypeMapping)
+            st.pyplot(fig)
+            
+        except Exception as e:
+            st.write(str(e))
+    
+
+
+if __name__ == '__main__':
+    main()
+    
+    
