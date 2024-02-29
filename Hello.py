@@ -111,14 +111,14 @@ def main():
             my_bar.empty()
 
             # print the prediction
-            st.subheader('Prediction Results')
+            st.subheader('Detection Results')
             st.write('👨🏿‍💻 Here are the results! Suspicious cyber attack records were highlighted in red!')
             prediction_output = pd.DataFrame(attackTypeMapping.map_value2type(predictions), columns = ['Attack_Type_Prediction'])
             prediction_output = pd.concat([prediction_output, X.reset_index(drop=True)], axis=1)
             st.dataframe(prediction_output.style.applymap(highlight_attack, subset=['Attack_Type_Prediction']))
 
             # report
-            st.subheader('Prediction Report')
+            st.subheader('Detection Report')
             st.write('👨🏿‍💻 Here are the prediction report of all types of cyber attack!')
             prediction_report = Prediction_Report()
 
@@ -130,6 +130,13 @@ def main():
 
             fig = prediction_report.plot_confusion_matrix(y, predictions, attackTypeMapping)
             st.pyplot(fig)
+
+
+            # check feature importance
+            st.subheader('Check Important Features')
+            st.write('⭐ Here are the feature importance on the default dataset generated from the Permutation Importance.')
+            st.write('⭐ Consider monitoring these features for cyber attack!')
+            st.image('./images/Feature Importance.png')
             
         except Exception as e:
             st.write(str(e))
