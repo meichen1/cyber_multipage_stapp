@@ -1,9 +1,7 @@
 altair
 plotly
-PIL
 # langchain
 # tiktoken pinecone-client
-
 dill==0.3.8
 matplotlib==3.8.3
 numpy==1.26.4
@@ -15,4 +13,3 @@ xgboost==2.0.3
 seaborn==0.13.2
 openai==1.12.0
 pydantic==2.6.3
-# tqdm==4.66.2
